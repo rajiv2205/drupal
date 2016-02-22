@@ -1,0 +1,148 @@
+php::ensure: latest
+php::manage_repos: true
+php::fpm: true
+php::dev: true
+php::composer: true
+php::pear: true
+php::phpunit: false
+php::fpm::config::log_level: notice
+php::composer::auto_update: true
+
+php::settings:
+  Date/date.timezone: Asia/Kolkata
+php::cli::settings:
+  PHP/memory_limit: 512M
+php::fpm::settings:
+  PHP/short_open_tag: 'On'
+
+php::fpm::pools:
+  www:
+    listen: 127.0.0.1:9000
+
+php::extensions:
+  mysql: {}
+  gd: {}
+  curl: {}
+
+nginx::nginx_upstreams:
+  'backend':
+    ensure: present
+    members:
+      - 127.0.0.1:9000
+nginx::nginx_vhosts:
+  'drupcrm1.com':
+    listen_port: 443
+    raw_prepend: "root /usr/share/nginx/html/drupal;"
+    ssl: true
+    ssl_cert: '/var/lib/puppet/ssl/certs/drupcrm1.com.pem'
+    ssl_key:  '/var/lib/puppet/ssl/private_keys/drupcrm1.com.pem'
+    location_custom_cfg:
+      "try_files": "$uri $uri/ @drupal"
+      "index": "index.php"
+nginx::nginx_locations:
+  'second':
+    ensure: present
+    ssl: true
+    ssl_only: true
+    location: '^~ /system/files/'
+    vhost: 'drupcrm1.com'
+    fastcgi: "127.0.0.1:9000"
+    fastcgi_param:
+      "SCRIPT_FILENAME": "$document_root$fastcgi_script_name"
+      "QUERY_STRING": "q=$uri"
+      "SCRIPT_NAME": "/index.php"
+      "SCRIPT_FILENAME": "$document_root/index.php"
+  'third':
+    ensure: present
+    ssl: true
+    ssl_only: true
+    location: '~* files/styles'
+    vhost: 'drupcrm1.com'
+    location_custom_cfg: 
+      "access_log": "off"
+      "expires": "30d"
+      "try_files": "$uri @drupal"
+  'forth':
+    ensure: present
+    ssl: true
+    ssl_only: true
+    location: '~* ^.+.(xsl|xml)$'
+    vhost: 'drupcrm1.com'
+    location_custom_cfg:
+      "access_log": "off"
+      "expires": "1d"
+      "try_files": "$uri @drupal"
+  'fifth':
+    ensure: present
+    ssl: true
+    ssl_only: true
+    location: '@drupal'
+    vhost: 'drupcrm1.com'
+    location_custom_cfg:
+      "rewrite": "^/(.*)$ /index.php?q=$1 last"
+  'sixth':
+    ensure: present
+    ssl: true
+    ssl_only: true
+    location: '~* ^.+.(jpg|jpeg|gif|css|png|js|ico|xml)$'
+    vhost: 'drupcrm1.com'
+    location_custom_cfg:
+      "access_log": "off"
+      "expires": "30d"
+  'seventh':
+    ensure: present
+    ssl: true
+    ssl_only: true
+    location: '^~ /private'
+    vhost: 'drupcrm1.com'
+    internal: true
+  'eight':
+    ensure: present
+    ssl: true
+    ssl_only: true
+    location: '^~ /backup_migrate/'
+    vhost: 'drupcrm1.com'
+    internal: true
+  'nineth':
+    ensure: present
+    ssl: true
+    ssl_only: true
+    location: '/sites/default/files/civicrm/'
+    vhost: 'drupcrm1.com'
+    location_custom_cfg:
+      "deny": "all"
+  'tenth':
+    ensure: present
+    ssl: true
+    ssl_only: true
+    location: '~ /\.ht'
+    vhost: 'drupcrm1.com'
+    location_custom_cfg:
+      "deny": "all"
+  'eleventh':
+    ensure: present
+    ssl: true
+    ssl_only: true
+    location: '~ .php$'
+    vhost: 'drupcrm1.com'
+    location_custom_cfg:
+      "include": "fastcgi_params"
+      "fastcgi_split_path_info": '^(.+\.php)(.*)$'
+      "fastcgi_pass": "backend"
+      "fastcgi_index": "index.php"
+      "fastcgi_intercept_errors":        "on"
+      "fastcgi_ignore_client_abort":     "off"
+      "fastcgi_connect_timeout": "60"
+      "fastcgi_send_timeout": "180"
+      "fastcgi_read_timeout": "180"
+      "fastcgi_buffer_size": "128k"
+      "fastcgi_buffers": "4 256k"
+      "fastcgi_busy_buffers_size": "256k"
+      "fastcgi_temp_file_write_size": "256k"
+      "fastcgi_param":
+        "SCRIPT_FILENAME": "$document_root$fastcgi_script_name"
+        "SCRIPT_NAME": "$fastcgi_script_name"
+        "QUERY_STRING": "$query_string"
+        "REQUEST_METHOD": "$request_method"
+        "CONTENT_TYPE": "$content_type"
+        "CONTENT_LENGTH": "$content_length"
